@@ -1,0 +1,28 @@
+package <%= packageName %>
+
+import android.os.Bundle
+import com.google.androidbrowserhelper.trusted.LauncherActivity
+
+/**
+ * MainActivity — the TWA entry point.
+ *
+ * This class extends [LauncherActivity] from the android-browser-helper library.
+ * LauncherActivity reads the default URL from:
+ *   AndroidManifest.xml > meta-data > android.support.customtabs.trusted.DEFAULT_URL
+ *
+ * To customise TWA behavior, override the relevant methods here.
+ */
+class MainActivity : LauncherActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+
+    /**
+     * Override to customise the URL opened in the TWA.
+     * By default, reads from AndroidManifest meta-data.
+     */
+    // override fun getLaunchingUrl(): Uri {
+    //     return Uri.parse("<%= websiteUrl %>")
+    // }
+}

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Splash screen background drawable.
+  This is a layer-list that shows the splash background color
+  with the app icon centered.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Background color -->
+    <item android:drawable="@color/splash_background" />
+
+    <!-- Centered app icon -->
+    <item>
+        <bitmap
+            android:src="@drawable/splash"
+            android:gravity="center"
+            android:tileMode="disabled" />
+    </item>
+
+</layer-list>
