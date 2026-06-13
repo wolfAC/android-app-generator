@@ -1,0 +1,22 @@
+package <%= packageName %>
+
+import android.app.Application
+<%  if (firebase && firebase.enabled) { %>
+import com.google.firebase.FirebaseApp
+<%  } %>
+
+/**
+ * Application class for <%= appName %>.
+ *
+ * Initialises global app-level dependencies.
+ */
+class TwaApplication : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+<%  if (firebase && firebase.enabled) { %>
+        // Initialise Firebase
+        FirebaseApp.initializeApp(this)
+<%  } %>
+    }
+}

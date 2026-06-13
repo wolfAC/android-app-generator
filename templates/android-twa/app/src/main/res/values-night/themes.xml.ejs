@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Dark mode theme overrides -->
+    <style name="Theme.<%= appName.replace(/[^a-zA-Z0-9]/g, '') %>" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:navigationBarColor">@color/background</item>
+    </style>
+
+    <style name="Theme.<%= appName.replace(/[^a-zA-Z0-9]/g, '') %>.Splash" parent="Theme.<%= appName.replace(/[^a-zA-Z0-9]/g, '') %>">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowFullscreen"><%= features.fullscreen ? 'true' : 'false' %></item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+    </style>
+
+</resources>

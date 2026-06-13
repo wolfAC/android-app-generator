@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base application theme -->
+    <style name="Theme.<%= appName.replace(/[^a-zA-Z0-9]/g, '') %>" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryVariant">@color/accent</item>
+        <item name="colorOnSecondary">@color/on_primary</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:navigationBarColor">@color/background</item>
+    </style>
+
+    <!-- Splash screen theme (used for SplashActivity) -->
+    <style name="Theme.<%= appName.replace(/[^a-zA-Z0-9]/g, '') %>.Splash" parent="Theme.<%= appName.replace(/[^a-zA-Z0-9]/g, '') %>">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowFullscreen"><%= features.fullscreen ? 'true' : 'false' %></item>
+        <item name="android:windowContentOverlay">@null</item>
+        <!-- Android 12+ splash screen -->
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+    </style>
+
+    <!-- TWA activity theme — no action bar, status bar matches primary color -->
+    <style name="Theme.<%= appName.replace(/[^a-zA-Z0-9]/g, '') %>.TWA" parent="Theme.<%= appName.replace(/[^a-zA-Z0-9]/g, '') %>">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:statusBarColor">@color/primary</item>
+    </style>
+
+</resources>

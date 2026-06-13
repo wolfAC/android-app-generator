@@ -1,0 +1,34 @@
+{
+  "appName": "My PWA App",
+  "packageName": "com.example.mypwaapp",
+  "websiteUrl": "https://example.com",
+  "version": {
+    "code": 1,
+    "name": "1.0.0"
+  },
+  "theme": {
+    "primary": "#6200EE",
+    "primaryDark": "#3700B3",
+    "accent": "#03DAC5",
+    "background": "#FFFFFF"
+  },
+  "features": {
+    "fullscreen": true,
+    "notifications": false,
+    "offline": false,
+    "camera": false,
+    "location": false,
+    "fileUpload": false,
+    "biometric": false,
+    "qrScanner": false
+  },
+  "firebase": {
+    "enabled": false
+  },
+  "orientation": "unspecified",
+  "android": {
+    "compileSdk": 35,
+    "minSdk": 24,
+    "targetSdk": 35
+  }
+}
