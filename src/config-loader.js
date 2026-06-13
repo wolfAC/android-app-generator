@@ -70,6 +70,7 @@ function getDefaults() {
       backgroundColor: '#6200EE',
       iconSize: 'medium',
     },
+    plugins: [],
   };
 }
 

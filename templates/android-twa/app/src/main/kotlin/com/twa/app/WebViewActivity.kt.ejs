@@ -309,6 +309,10 @@ class WebViewActivity : AppCompatActivity() {
         binding.webView.onPause()
     }
 
+    fun evaluateJs(script: String) {
+        binding.webView.post { binding.webView.evaluateJavascript(script, null) }
+    }
+
     override fun onDestroy() {
         binding.webView.destroy()
         super.onDestroy()

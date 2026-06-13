@@ -1,0 +1,30 @@
+    @JavascriptInterface
+    fun isBiometricAvailable(): Boolean {
+        return <%= packageName %>.plugins.BiometricHelper.isBiometricAvailable(context)
+    }
+
+    @JavascriptInterface
+    fun authenticateBiometric(title: String, subtitle: String, callbackId: String) {
+        if (activity is androidx.fragment.app.FragmentActivity) {
+            <%= packageName %>.plugins.BiometricHelper.authenticate(
+                activity = activity as androidx.fragment.app.FragmentActivity,
+                title = title,
+                subtitle = subtitle,
+                onSuccess = {
+                    activity.runOnUiThread {
+                        (activity as? WebViewActivity)?.evaluateJs(
+                            "window.__biometricCallbacks && window.__biometricCallbacks['$callbackId'] && window.__biometricCallbacks['$callbackId'](null, true);"
+                        )
+                    }
+                },
+                onError = { error ->
+                    val escaped = error.replace("'", "\\'")
+                    activity.runOnUiThread {
+                        (activity as? WebViewActivity)?.evaluateJs(
+                            "window.__biometricCallbacks && window.__biometricCallbacks['$callbackId'] && window.__biometricCallbacks['$callbackId']('$escaped', false);"
+                        )
+                    }
+                }
+            )
+        }
+    }

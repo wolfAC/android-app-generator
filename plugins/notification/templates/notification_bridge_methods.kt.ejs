@@ -1,0 +1,19 @@
+    @JavascriptInterface
+    fun subscribeToTopic(topic: String) {
+        <%= packageName %>.plugins.NotificationPlugin.subscribeToTopic(topic)
+    }
+
+    @JavascriptInterface
+    fun unsubscribeFromTopic(topic: String) {
+        <%= packageName %>.plugins.NotificationPlugin.unsubscribeFromTopic(topic)
+    }
+
+    @JavascriptInterface
+    fun scheduleLocalNotification(title: String, body: String, delayMs: Long) {
+        <%= packageName %>.plugins.NotificationPlugin.scheduleLocalNotification(context, title, body, delayMs)
+    }
+
+    @JavascriptInterface
+    fun clearAllNotifications() {
+        <%= packageName %>.plugins.NotificationPlugin.clearAllNotifications(context)
+    }

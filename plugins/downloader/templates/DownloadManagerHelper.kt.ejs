@@ -1,0 +1,76 @@
+package <%= packageName %>.plugins
+
+import android.app.DownloadManager
+import android.content.Context
+import android.net.Uri
+import android.os.Environment
+import android.webkit.MimeTypeMap
+
+object DownloadManagerHelper {
+
+    fun enqueueDownload(
+        context: Context,
+        url: String,
+        filename: String,
+        mimeType: String? = null,
+    ): Long {
+        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val ext = MimeTypeMap.getFileExtensionFromUrl(url)
+        val resolvedMime = mimeType
+            ?: MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+            ?: "application/octet-stream"
+
+        val request = DownloadManager.Request(Uri.parse(url)).apply {
+            setTitle(filename)
+            setDescription("Downloading...")
+            setMimeType(resolvedMime)
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
+            @Suppress("DEPRECATION")
+            allowScanningByMediaScanner()
+        }
+        return dm.enqueue(request)
+    }
+
+    fun getDownloadStatus(context: Context, downloadId: Long): Map<String, Any> {
+        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val query = DownloadManager.Query().setFilterById(downloadId)
+        val cursor = dm.query(query)
+
+        if (!cursor.moveToFirst()) {
+            cursor.close()
+            return mapOf("status" to "not_found")
+        }
+
+        val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+        val bytesDownloaded = cursor.getLong(
+            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+        )
+        val bytesTotal = cursor.getLong(
+            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+        )
+        cursor.close()
+
+        val statusStr = when (status) {
+            DownloadManager.STATUS_PENDING -> "pending"
+            DownloadManager.STATUS_RUNNING -> "running"
+            DownloadManager.STATUS_PAUSED -> "paused"
+            DownloadManager.STATUS_SUCCESSFUL -> "successful"
+            DownloadManager.STATUS_FAILED -> "failed"
+            else -> "unknown"
+        }
+        val progress = if (bytesTotal > 0) (bytesDownloaded * 100 / bytesTotal).toInt() else 0
+
+        return mapOf(
+            "status" to statusStr,
+            "progress" to progress,
+            "bytesDownloaded" to bytesDownloaded,
+            "bytesTotal" to bytesTotal,
+        )
+    }
+
+    fun cancelDownload(context: Context, downloadId: Long): Int {
+        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        return dm.remove(downloadId)
+    }
+}

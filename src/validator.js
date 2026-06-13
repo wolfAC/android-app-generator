@@ -1,7 +1,24 @@
 'use strict';
 
+const path = require('path');
+const fs = require('fs');
 const semver = require('semver');
 const logger = require('./logger');
+
+const KNOWN_PLUGINS = (() => {
+  try {
+    const pluginsDir = path.resolve(__dirname, '..', 'plugins');
+    return fs.readdirSync(pluginsDir).filter((entry) => {
+      try {
+        return fs.statSync(path.join(pluginsDir, entry)).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return [];
+  }
+})();
 
 const PACKAGE_NAME_REGEX = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 const HEX_COLOR_REGEX = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/;
@@ -166,6 +183,27 @@ function validate(config) {
       errors.push(
         `android.compileSdk (${config.android.compileSdk}) must be >= android.targetSdk (${config.android.targetSdk})`
       );
+    }
+  }
+
+  // --- plugins ---
+  if (config.plugins !== undefined) {
+    if (!Array.isArray(config.plugins)) {
+      errors.push('plugins must be an array');
+    } else {
+      config.plugins.forEach((entry, i) => {
+        const name = typeof entry === 'string' ? entry : (entry && entry.name);
+        if (!name || typeof name !== 'string') {
+          errors.push(`plugins[${i}] must be a string or an object with a "name" field`);
+          return;
+        }
+        if (KNOWN_PLUGINS.length > 0 && !KNOWN_PLUGINS.includes(name)) {
+          warnings.push(
+            `plugins[${i}]: unknown plugin "${name}". ` +
+            `Known plugins: ${KNOWN_PLUGINS.join(', ')}`
+          );
+        }
+      });
     }
   }
 

@@ -1,0 +1,96 @@
+package <%= packageName %>.plugins
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Worker
+import androidx.work.WorkerParameters
+import com.google.firebase.messaging.FirebaseMessaging
+import java.util.concurrent.TimeUnit
+
+object NotificationPlugin {
+
+    fun subscribeToTopic(topic: String) {
+        FirebaseMessaging.getInstance().subscribeToTopic(topic)
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    // Subscription failed — callers may observe via the returned Task
+                }
+            }
+    }
+
+    fun unsubscribeFromTopic(topic: String) {
+        FirebaseMessaging.getInstance().unsubscribeFromTopic(topic)
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    // Unsubscription failed
+                }
+            }
+    }
+
+    fun scheduleLocalNotification(context: Context, title: String, body: String, delayMs: Long) {
+        val inputData = Data.Builder()
+            .putString("title", title)
+            .putString("body", body)
+            .build()
+
+        val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
+            .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
+            .setInputData(inputData)
+            .build()
+
+        WorkManager.getInstance(context).enqueue(workRequest)
+    }
+
+    fun clearAllNotifications(context: Context) {
+        NotificationManagerCompat.from(context).cancelAll()
+    }
+
+    class NotificationWorker(
+        private val context: Context,
+        params: WorkerParameters,
+    ) : Worker(context, params) {
+
+        override fun doWork(): Result {
+            val title = inputData.getString("title") ?: "Notification"
+            val body = inputData.getString("body") ?: ""
+            showNotification(context, title, body)
+            return Result.success()
+        }
+
+        private fun showNotification(context: Context, title: String, body: String) {
+            val channelId = "local_notifications"
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    channelId,
+                    "Local Notifications",
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                )
+                val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                nm.createNotificationChannel(channel)
+            }
+
+            val notification = NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .build()
+
+            val nm = NotificationManagerCompat.from(context)
+            try {
+                nm.notify(System.currentTimeMillis().toInt(), notification)
+            } catch (_: SecurityException) {
+                // POST_NOTIFICATIONS permission not granted
+            }
+        }
+    }
+}

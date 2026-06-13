@@ -192,6 +192,10 @@ function buildTemplateData(config) {
       !!(features.camera || features.qrScanner || features.biometric ||
          features.fileUpload || features.location || features.notifications),
 
+    // Plugins
+    plugins: config.plugins || [],
+    activePlugins: (config.plugins || []).map(p => typeof p === 'string' ? p : p.name),
+
     // Generation metadata
     generatedAt: new Date().toISOString(),
     generatorVersion: '1.0.0',

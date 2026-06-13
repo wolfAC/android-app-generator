@@ -1,0 +1,16 @@
+package <%= packageName %>.plugins
+
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+
+class DownloadReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE) {
+            @Suppress("UNUSED_VARIABLE")
+            val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+            // Download complete — apps can observe via DownloadManagerHelper.getDownloadStatus
+        }
+    }
+}

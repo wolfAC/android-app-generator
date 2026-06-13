@@ -1,0 +1,13 @@
+    @JavascriptInterface
+    fun scanQR(callbackId: String) {
+        val intent = android.content.Intent(activity, <%= packageName %>.plugins.QrScannerActivity::class.java)
+        <%= packageName %>.plugins.QrScannerActivity.resultCallback = { result ->
+            val escaped = result?.replace("'", "\\'") ?: ""
+            activity.runOnUiThread {
+                (activity as? WebViewActivity)?.evaluateJs(
+                    "window.__qrCallbacks && window.__qrCallbacks['$callbackId'] && window.__qrCallbacks['$callbackId']('$escaped');"
+                )
+            }
+        }
+        activity.startActivity(intent)
+    }

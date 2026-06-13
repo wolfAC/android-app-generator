@@ -1,0 +1,47 @@
+    private val billingManager by lazy { <%= packageName %>.plugins.BillingManager(context) }
+
+    @JavascriptInterface
+    fun initBilling(callbackId: String) {
+        billingManager.connect { ready ->
+            activity.runOnUiThread {
+                (activity as? WebViewActivity)?.evaluateJs(
+                    "window.__billingCallbacks && window.__billingCallbacks['$callbackId'] && window.__billingCallbacks['$callbackId']($ready);"
+                )
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun purchaseProduct(productId: String, callbackId: String) {
+        billingManager.queryProducts(listOf(productId)) { products ->
+            val product = products.firstOrNull()
+            if (product == null) {
+                activity.runOnUiThread {
+                    (activity as? WebViewActivity)?.evaluateJs(
+                        "window.__billingCallbacks && window.__billingCallbacks['$callbackId'] && window.__billingCallbacks['$callbackId'](false, 'product_not_found');"
+                    )
+                }
+                return@queryProducts
+            }
+            billingManager.launchPurchaseFlow(activity, product) { success, error ->
+                val errorStr = error?.replace("'", "\\'") ?: ""
+                activity.runOnUiThread {
+                    (activity as? WebViewActivity)?.evaluateJs(
+                        "window.__billingCallbacks && window.__billingCallbacks['$callbackId'] && window.__billingCallbacks['$callbackId']($success, '$errorStr');"
+                    )
+                }
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun getPurchases(callbackId: String) {
+        billingManager.queryPurchases { purchases ->
+            val ids = purchases.joinToString(",", "[", "]") { "\"${it.products.firstOrNull()}\"" }
+            activity.runOnUiThread {
+                (activity as? WebViewActivity)?.evaluateJs(
+                    "window.__billingCallbacks && window.__billingCallbacks['$callbackId'] && window.__billingCallbacks['$callbackId']($ids);"
+                )
+            }
+        }
+    }

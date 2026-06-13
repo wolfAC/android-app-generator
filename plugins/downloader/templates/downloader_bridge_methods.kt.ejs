@@ -1,0 +1,22 @@
+    @JavascriptInterface
+    fun downloadFile(url: String, filename: String, mimeType: String): Long {
+        return try {
+            <%= packageName %>.plugins.DownloadManagerHelper.enqueueDownload(
+                context,
+                url,
+                filename,
+                mimeType.ifBlank { null },
+            )
+        } catch (e: Exception) { -1L }
+    }
+
+    @JavascriptInterface
+    fun getDownloadStatus(downloadId: Long): String {
+        val status = <%= packageName %>.plugins.DownloadManagerHelper.getDownloadStatus(context, downloadId)
+        return org.json.JSONObject(status as Map<*, *>).toString()
+    }
+
+    @JavascriptInterface
+    fun cancelDownload(downloadId: Long): Boolean {
+        return <%= packageName %>.plugins.DownloadManagerHelper.cancelDownload(context, downloadId) > 0
+    }
