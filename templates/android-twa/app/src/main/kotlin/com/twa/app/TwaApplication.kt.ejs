@@ -18,5 +18,7 @@ class TwaApplication : Application() {
         // Initialise Firebase
         FirebaseApp.initializeApp(this)
 <%  } %>
+        // Set up notification channels
+        NotificationHelper.createChannels(this)
     }
 }

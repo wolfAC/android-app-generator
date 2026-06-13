@@ -5,6 +5,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
 <%  if (features.camera) { %>
     <uses-permission android:name="android.permission.CAMERA" />
@@ -26,6 +27,7 @@
 <%  if (features.fileUpload) { %>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
 <%  } %>
 
     <application
@@ -133,6 +135,31 @@
                 android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
                 android:value="customtabs" />
         </activity>
+
+<%  if (features.camera || features.qrScanner || features.biometric || features.fileUpload || features.location || features.notifications) { %>
+        <!-- ── WebView Activity (Native Bridge) ──────────────────────────── -->
+
+        <activity
+            android:name=".WebViewActivity"
+            android:exported="false"
+            android:screenOrientation="<%= orientation %>"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize" />
+<%  } %>
+
+<%  if (features.camera || features.fileUpload) { %>
+        <!-- ── FileProvider for camera / file upload ─────────────────────── -->
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_provider_paths" />
+        </provider>
+<%  } %>
 
 <%  if (features.notifications && firebase && firebase.enabled) { %>
         <!-- ── Firebase Messaging Service ──────────────────────────────── -->

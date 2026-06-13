@@ -1,0 +1,39 @@
+package <%= packageName %>
+
+<%  if (firebase && firebase.enabled) { %>
+import android.content.Context
+
+/**
+ * FirebaseTokenManager — stores and retrieves the FCM registration token.
+ *
+ * Saves the token to SharedPreferences so it is available synchronously
+ * (e.g. for injection into the WebView via [AndroidBridge.getFcmToken]).
+ */
+object FirebaseTokenManager {
+
+    private const val PREFS_NAME = "fcm_prefs"
+    private const val KEY_TOKEN = "fcm_token"
+
+    fun saveToken(context: Context, token: String) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_TOKEN, token)
+            .apply()
+    }
+
+    fun getToken(context: Context): String? {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_TOKEN, null)
+    }
+
+    fun clearToken(context: Context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .remove(KEY_TOKEN)
+            .apply()
+    }
+}
+<%  } else { %>
+// FirebaseTokenManager is disabled.
+// To enable it, set firebase.enabled = true in app.json and regenerate the project.
+<%  } %>

@@ -122,6 +122,7 @@ function buildTemplateData(config) {
       fileUpload: false,
       biometric: false,
       qrScanner: false,
+      bridge: false,
     },
     config.features || {}
   );
@@ -185,6 +186,11 @@ function buildTemplateData(config) {
     customPermissions: config.customPermissions || [],
     deepLinks: config.deepLinks || [],
     splash: Object.assign({ backgroundColor: theme.primary, iconSize: 'medium' }, config.splash || {}),
+
+    // Computed: whether native WebView bridge is needed
+    nativeBridgeEnabled:
+      !!(features.camera || features.qrScanner || features.biometric ||
+         features.fileUpload || features.location || features.notifications),
 
     // Generation metadata
     generatedAt: new Date().toISOString(),

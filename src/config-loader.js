@@ -35,6 +35,7 @@ function getDefaults() {
       fileUpload: false,
       biometric: false,
       qrScanner: false,
+      bridge: false,
     },
     firebase: {
       enabled: false,
