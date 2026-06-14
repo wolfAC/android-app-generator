@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TWA Generator — Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="/assets/app.css" />
+</head>
+<body class="d-flex" style="height:100vh;overflow:hidden;">
+
+  <!-- Sidebar -->
+  <aside class="sidebar d-flex flex-column">
+    <div class="sidebar-header px-3 py-3 border-bottom border-secondary">
+      <span class="fw-bold fs-5">&#9881; TWA Generator</span>
+    </div>
+
+    <div class="px-3 py-2 text-muted small text-uppercase fw-semibold" style="letter-spacing:.08em;">Projects</div>
+    <div id="projectList" class="flex-grow-1 overflow-y-auto px-2"></div>
+
+    <div class="p-3 border-top border-secondary">
+      <button class="btn btn-outline-light btn-sm w-100 mb-2" id="newProjectBtn">+ New Project</button>
+      <div class="text-muted small text-truncate" id="userEmail"></div>
+      <button class="btn btn-link btn-sm p-0 text-danger" id="logoutBtn">Logout</button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-grow-1 overflow-y-auto p-4 bg-light">
+
+    <!-- View: Project Form -->
+    <div id="viewProjectForm" class="view d-none">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 id="formTitle" class="h4 mb-0">New Project</h2>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm" id="viewBuildsBtn" style="display:none!important">Build History</button>
+        </div>
+      </div>
+
+      <form id="projectForm">
+        <!-- Basic Info -->
+        <div class="card mb-3">
+          <div class="card-header fw-semibold">Basic Info</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">App Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="appName" placeholder="My Awesome App" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Package Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="packageName" placeholder="com.example.myapp" required />
+                <div class="form-text">Reverse domain notation, e.g. com.company.app</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Website URL <span class="text-danger">*</span></label>
+                <input type="url" class="form-control" name="websiteUrl" placeholder="https://myapp.example.com" required />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Version -->
+        <div class="card mb-3">
+          <div class="card-header fw-semibold">Version</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Version Name</label>
+                <input type="text" class="form-control" name="versionName" placeholder="1.0.0" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Version Code</label>
+                <input type="number" class="form-control" name="versionCode" min="1" placeholder="1" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Branding -->
+        <div class="card mb-3">
+          <div class="card-header fw-semibold">Branding</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Primary Color</label>
+                <div class="d-flex gap-2 align-items-center">
+                  <input type="color" class="form-control form-control-color" name="primaryColor" value="#6200EE" />
+                  <input type="text" class="form-control form-control-sm" name="primaryColorHex" value="#6200EE" placeholder="#6200EE" style="width:100px;" />
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Background Color</label>
+                <div class="d-flex gap-2 align-items-center">
+                  <input type="color" class="form-control form-control-color" name="backgroundColor" value="#FFFFFF" />
+                  <input type="text" class="form-control form-control-sm" name="backgroundColorHex" value="#FFFFFF" placeholder="#FFFFFF" style="width:100px;" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assets -->
+        <div class="card mb-3">
+          <div class="card-header fw-semibold">Assets</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">App Icon</label>
+                <div class="upload-zone" id="iconDropZone">
+                  <div id="iconPlaceholder">
+                    <div class="text-muted mb-1">&#128247; Drop icon here or click to browse</div>
+                    <div class="text-muted small">PNG, JPG, WebP — max 5MB</div>
+                  </div>
+                  <img id="iconPreview" class="d-none" alt="Icon preview" />
+                  <input type="file" id="iconFile" class="d-none" accept="image/png,image/jpeg,image/webp" />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Splash Image</label>
+                <div class="upload-zone" id="splashDropZone">
+                  <div id="splashPlaceholder">
+                    <div class="text-muted mb-1">&#127774; Drop splash image here or click to browse</div>
+                    <div class="text-muted small">PNG, JPG, WebP — max 10MB</div>
+                  </div>
+                  <img id="splashPreview" class="d-none" alt="Splash preview" />
+                  <input type="file" id="splashFile" class="d-none" accept="image/png,image/jpeg,image/webp" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Features -->
+        <div class="card mb-3">
+          <div class="card-header fw-semibold">Features</div>
+          <div class="card-body">
+            <div class="feature-grid">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="feat_fullscreen" id="feat_fullscreen" />
+                <label class="form-check-label" for="feat_fullscreen">Fullscreen</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="feat_notifications" id="feat_notifications" />
+                <label class="form-check-label" for="feat_notifications">Notifications</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="feat_camera" id="feat_camera" />
+                <label class="form-check-label" for="feat_camera">Camera</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="feat_location" id="feat_location" />
+                <label class="form-check-label" for="feat_location">Location</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="feat_fileUpload" id="feat_fileUpload" />
+                <label class="form-check-label" for="feat_fileUpload">File Upload</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="feat_biometric" id="feat_biometric" />
+                <label class="form-check-label" for="feat_biometric">Biometric</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="feat_qrScanner" id="feat_qrScanner" />
+                <label class="form-check-label" for="feat_qrScanner">QR Scanner</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="feat_offline" id="feat_offline" />
+                <label class="form-check-label" for="feat_offline">Offline</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plugins -->
+        <div class="card mb-3">
+          <div class="card-header fw-semibold">Plugins</div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="plugin_notification" id="plugin_notification" />
+                  <label class="form-check-label" for="plugin_notification">Notification</label>
+                </div>
+              </div>
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="plugin_biometric" id="plugin_biometric" />
+                  <label class="form-check-label" for="plugin_biometric">Biometric</label>
+                </div>
+              </div>
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="plugin_qr-scanner" id="plugin_qr-scanner" />
+                  <label class="form-check-label" for="plugin_qr-scanner">QR Scanner</label>
+                </div>
+              </div>
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="plugin_downloader" id="plugin_downloader" />
+                  <label class="form-check-label" for="plugin_downloader">Downloader</label>
+                </div>
+              </div>
+              <div class="col-md-4 col-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="plugin_payments" id="plugin_payments" />
+                  <label class="form-check-label" for="plugin_payments">Payments</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Firebase -->
+        <div class="card mb-3">
+          <div class="card-header fw-semibold d-flex align-items-center gap-3">
+            Firebase
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" name="firebaseEnabled" id="firebaseEnabled" />
+              <label class="form-check-label" for="firebaseEnabled">Enable</label>
+            </div>
+          </div>
+          <div class="card-body" id="firebaseFields" style="display:none;">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Project ID</label>
+                <input type="text" class="form-control" name="firebaseProjectId" placeholder="my-project-id" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">App ID</label>
+                <input type="text" class="form-control" name="firebaseAppId" placeholder="1:xxx:android:yyy" />
+              </div>
+              <div class="col-12">
+                <label class="form-label">API Key</label>
+                <input type="text" class="form-control" name="firebaseApiKey" placeholder="AIza..." />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="submit" class="btn btn-primary" id="saveProjectBtn">
+            <span id="saveSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+            Save Project
+          </button>
+          <button type="button" class="btn btn-success" id="generateBtn" disabled>
+            Generate Project
+          </button>
+          <button type="button" class="btn btn-warning text-white" id="buildApkBtn" disabled>
+            Build APK (Debug)
+          </button>
+          <button type="button" class="btn btn-dark" id="buildAabBtn" disabled>
+            Build AAB (Release)
+          </button>
+          <button type="button" class="btn btn-outline-danger ms-auto" id="deleteProjectBtn" style="display:none;">
+            Delete Project
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- View: Build Log -->
+    <div id="viewBuildLog" class="view d-none">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="h4 mb-0">Build Log</h2>
+        <button class="btn btn-outline-secondary btn-sm" id="backToProjectBtn">&#8592; Back to Project</button>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div>
+            <span class="text-muted small">Status</span><br>
+            <span id="buildStatusBadge" class="badge status-queued fs-6">queued</span>
+          </div>
+          <div>
+            <span class="text-muted small">Variant</span><br>
+            <span id="buildVariantBadge" class="badge bg-secondary">-</span>
+          </div>
+          <div>
+            <span class="text-muted small">Format</span><br>
+            <span id="buildFormatBadge" class="badge bg-secondary">-</span>
+          </div>
+          <div class="ms-auto">
+            <div id="buildSpinner" class="spinner-border text-primary d-none"></div>
+          </div>
+        </div>
+      </div>
+
+      <pre id="buildLogOutput" class="build-log">Connecting to build stream...</pre>
+
+      <div id="downloadSection" class="d-none mt-3">
+        <div class="alert alert-success">
+          <strong>Build succeeded!</strong> Your artifacts are ready to download.
+        </div>
+        <div id="downloadButtons" class="d-flex gap-2 flex-wrap"></div>
+      </div>
+    </div>
+
+    <!-- View: Builds History -->
+    <div id="viewBuildsHistory" class="view d-none">
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="h4 mb-0">Build History</h2>
+        <button class="btn btn-outline-secondary btn-sm" id="backFromHistoryBtn">&#8592; Back to Project</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Variant</th>
+              <th>Format</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="buildsTableBody">
+            <tr><td colspan="5" class="text-muted text-center">No builds yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="viewEmpty" class="view text-center py-5">
+      <div class="display-1 mb-3">&#9881;</div>
+      <h2 class="h4 text-muted">No project selected</h2>
+      <p class="text-muted">Create a new project or select one from the sidebar.</p>
+      <button class="btn btn-primary" id="emptyNewProjectBtn">+ New Project</button>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/assets/dashboard.js"></script>
+</body>
+</html>
