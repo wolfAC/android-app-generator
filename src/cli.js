@@ -398,6 +398,37 @@ pluginCmd
     process.exit(0);
   });
 
+// ─── dashboard ──────────────────────────────────────────────────────────────
+
+program
+  .command('dashboard')
+  .description('Start the self-hosted web dashboard for the TWA Generator')
+  .option('-p, --port <port>', 'Port to listen on', '3000')
+  .option('--open', 'Open browser after starting')
+  .action((options) => {
+    const port = parseInt(options.port, 10) || 3000;
+    process.env.PORT = String(port);
+
+    const app = require('../dashboard/server');
+
+    app.listen(port, () => {
+      console.log(`TWA Dashboard running at http://localhost:${port}`);
+      console.log(`  Login/Register: http://localhost:${port}/`);
+      console.log(`  Dashboard:      http://localhost:${port}/dashboard`);
+    });
+
+    if (options.open) {
+      setTimeout(() => {
+        const url = `http://localhost:${port}`;
+        const { exec } = require('child_process');
+        const cmd = process.platform === 'win32' ? `start ${url}`
+          : process.platform === 'darwin' ? `open ${url}`
+          : `xdg-open ${url}`;
+        exec(cmd);
+      }, 1000);
+    }
+  });
+
 // ─── Global error handler ────────────────────────────────────────────────────
 
 program.on('command:*', () => {
