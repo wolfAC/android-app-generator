@@ -178,6 +178,16 @@ class Generator {
       await fs.chmod(gradlewPath, 0o755);
     }
 
+    // --- Step 7b: Apply plugins ---
+    if (config.plugins && config.plugins.length > 0) {
+      logger.step(`Applying ${config.plugins.length} plugin(s)...`);
+      const PluginManager = require('./plugin-manager');
+      const pm = new PluginManager(path.resolve(__dirname, '..', 'plugins'));
+      await pm.loadPlugins(config.plugins);
+      await pm.applyPlugins(config, resolvedOutputDir, templateData);
+      logger.success('Plugins applied');
+    }
+
     // --- Step 8: Write assetlinks.json placeholder ---
     logger.step('Writing assetlinks.json placeholder...');
     await writeAssetLinks(config, resolvedOutputDir);

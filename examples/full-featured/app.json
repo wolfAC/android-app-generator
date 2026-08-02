@@ -1,0 +1,26 @@
+{
+  "appName": "Full Featured App",
+  "packageName": "com.example.fullapp",
+  "websiteUrl": "https://example.com",
+  "version": {
+    "code": 1,
+    "name": "1.0.0"
+  },
+  "theme": {
+    "primary": "#2196F3",
+    "background": "#FFFFFF"
+  },
+  "features": {
+    "fullscreen": true,
+    "notifications": true,
+    "camera": true,
+    "location": true,
+    "fileUpload": true,
+    "biometric": true,
+    "qrScanner": true
+  },
+  "firebase": {
+    "enabled": true
+  },
+  "plugins": ["notification", "biometric", "qr-scanner", "downloader", "payments"]
+}

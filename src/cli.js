@@ -214,6 +214,190 @@ program
     process.exit(0);
   });
 
+// ─── plugin ─────────────────────────────────────────────────────────────────
+
+const pluginCmd = program
+  .command('plugin')
+  .description('Manage TWA Generator plugins');
+
+pluginCmd
+  .command('list')
+  .description('List all available built-in plugins')
+  .action(() => {
+    const fs = require('fs-extra');
+    const pluginsDir = path.resolve(__dirname, '..', 'plugins');
+
+    logger.title('TWA Generator — Available Plugins');
+
+    let plugins = [];
+    try {
+      plugins = fs.readdirSync(pluginsDir).filter((entry) => {
+        try {
+          const indexFile = path.join(pluginsDir, entry, 'index.js');
+          return fs.existsSync(indexFile);
+        } catch {
+          return false;
+        }
+      });
+    } catch (err) {
+      logger.error(`Could not read plugins directory: ${err.message}`);
+      process.exit(1);
+    }
+
+    if (plugins.length === 0) {
+      logger.info('No plugins installed.');
+      process.exit(0);
+    }
+
+    plugins.forEach((name) => {
+      try {
+        const plugin = require(path.join(pluginsDir, name, 'index.js'));
+        logger.info(`  ${chalk.cyan(plugin.name)}@${plugin.version}  —  ${plugin.description || ''}`);
+      } catch {
+        logger.info(`  ${chalk.cyan(name)}  (failed to load)`);
+      }
+    });
+
+    logger.blank();
+    logger.info(`To use a plugin, add it to your app.json "plugins" array:`);
+    logger.info(`  "plugins": ["${plugins[0]}"]`);
+    process.exit(0);
+  });
+
+pluginCmd
+  .command('info <name>')
+  .description('Show details about a built-in plugin')
+  .action((name) => {
+    const pluginsDir = path.resolve(__dirname, '..', 'plugins');
+    const pluginFile = path.join(pluginsDir, name, 'index.js');
+
+    const fs = require('fs-extra');
+    if (!fs.existsSync(pluginFile)) {
+      logger.error(`Plugin "${name}" not found at ${pluginFile}`);
+      process.exit(1);
+    }
+
+    try {
+      const plugin = require(pluginFile);
+      logger.title(`Plugin: ${plugin.name}`);
+      logger.info(`Version:     ${plugin.version}`);
+      logger.info(`Description: ${plugin.description || '(none)'}`);
+      logger.blank();
+
+      if (plugin.dependencies && plugin.dependencies.length > 0) {
+        logger.info('Maven dependencies:');
+        plugin.dependencies.forEach((d) => logger.info(`  ${d.configuration}("${d.artifact}")`));
+        logger.blank();
+      }
+      if (plugin.gradlePlugins && plugin.gradlePlugins.length > 0) {
+        logger.info('Gradle plugins:');
+        plugin.gradlePlugins.forEach((p) => logger.info(`  id("${p.id}")`));
+        logger.blank();
+      }
+      if (plugin.permissions && plugin.permissions.length > 0) {
+        logger.info('Android permissions:');
+        plugin.permissions.forEach((p) => logger.info(`  ${p}`));
+        logger.blank();
+      }
+      if (plugin.kotlinFiles && plugin.kotlinFiles.length > 0) {
+        logger.info('Kotlin files:');
+        plugin.kotlinFiles.forEach((f) => logger.info(`  ${f.dest}`));
+        logger.blank();
+      }
+
+      logger.info('Usage in app.json:');
+      logger.info(`  "plugins": ["${plugin.name}"]`);
+    } catch (err) {
+      logger.error(`Failed to load plugin "${name}": ${err.message}`);
+      process.exit(1);
+    }
+
+    process.exit(0);
+  });
+
+pluginCmd
+  .command('add <name> [configDir]')
+  .description('Add a plugin to app.json')
+  .action(async (name, configDir) => {
+    const fs = require('fs-extra');
+    const targetDir = configDir ? path.resolve(configDir) : process.cwd();
+    const configPath = path.join(targetDir, 'app.json');
+
+    if (!fs.existsSync(configPath)) {
+      logger.error(`app.json not found at: ${configPath}`);
+      process.exit(1);
+    }
+
+    const pluginsDir = path.resolve(__dirname, '..', 'plugins');
+    if (!fs.existsSync(path.join(pluginsDir, name, 'index.js'))) {
+      logger.warn(`Plugin "${name}" is not a known built-in plugin — adding anyway`);
+    }
+
+    let config;
+    try {
+      config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
+    } catch (err) {
+      logger.error(`Failed to read app.json: ${err.message}`);
+      process.exit(1);
+    }
+
+    if (!Array.isArray(config.plugins)) {
+      config.plugins = [];
+    }
+
+    if (config.plugins.includes(name) || config.plugins.some((p) => p && p.name === name)) {
+      logger.warn(`Plugin "${name}" is already in app.json`);
+      process.exit(0);
+    }
+
+    config.plugins.push(name);
+    await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+    logger.success(`Added plugin "${name}" to ${configPath}`);
+    process.exit(0);
+  });
+
+pluginCmd
+  .command('remove <name> [configDir]')
+  .description('Remove a plugin from app.json')
+  .action(async (name, configDir) => {
+    const fs = require('fs-extra');
+    const targetDir = configDir ? path.resolve(configDir) : process.cwd();
+    const configPath = path.join(targetDir, 'app.json');
+
+    if (!fs.existsSync(configPath)) {
+      logger.error(`app.json not found at: ${configPath}`);
+      process.exit(1);
+    }
+
+    let config;
+    try {
+      config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
+    } catch (err) {
+      logger.error(`Failed to read app.json: ${err.message}`);
+      process.exit(1);
+    }
+
+    if (!Array.isArray(config.plugins)) {
+      logger.warn('No plugins configured in app.json');
+      process.exit(0);
+    }
+
+    const before = config.plugins.length;
+    config.plugins = config.plugins.filter((p) => {
+      const n = typeof p === 'string' ? p : (p && p.name);
+      return n !== name;
+    });
+
+    if (config.plugins.length === before) {
+      logger.warn(`Plugin "${name}" was not found in app.json`);
+      process.exit(0);
+    }
+
+    await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+    logger.success(`Removed plugin "${name}" from ${configPath}`);
+    process.exit(0);
+  });
+
 // ─── Global error handler ────────────────────────────────────────────────────
 
 program.on('command:*', () => {
