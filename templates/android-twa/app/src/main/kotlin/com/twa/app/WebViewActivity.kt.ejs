@@ -1,0 +1,316 @@
+package <%= packageName %>
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Bundle
+import android.os.Message
+import android.view.View
+import android.webkit.CookieManager
+import android.webkit.GeolocationPermissions
+import android.webkit.PermissionRequest
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import <%= packageName %>.databinding.ActivityWebviewBinding
+
+/**
+ * WebViewActivity — full-featured WebView activity with native bridge.
+ *
+ * Used instead of TWA's LauncherActivity when native bridge features are enabled.
+ * Exposes [AndroidBridge] as window.Android in the web page.
+ */
+class WebViewActivity : AppCompatActivity() {
+
+    companion object {
+        const val EXTRA_URL = "extra_url"
+        const val WEBSITE_URL = "<%= websiteUrl %>"
+        const val FILE_CHOOSER_REQUEST = 1001
+        const val CAMERA_PERMISSION_REQUEST = 1002
+        const val LOCATION_PERMISSION_REQUEST = 1003
+    }
+
+    private lateinit var binding: ActivityWebviewBinding
+    private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
+    private var permissionRequest: PermissionRequest? = null
+    private var geolocationCallback: GeolocationPermissions.Callback? = null
+    private var geolocationOrigin: String? = null
+
+    @SuppressLint("SetJavaScriptEnabled")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityWebviewBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        setupWebView()
+        setupBackNavigation()
+
+        if (savedInstanceState != null) {
+            binding.webView.restoreState(savedInstanceState)
+        } else {
+            val url = intent.getStringExtra(EXTRA_URL) ?: WEBSITE_URL
+            binding.webView.loadUrl(url)
+        }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setupWebView() {
+        val webView = binding.webView
+
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            allowFileAccess = true
+            allowContentAccess = true
+            setSupportZoom(false)
+            builtInZoomControls = false
+            displayZoomControls = false
+            useWideViewPort = true
+            loadWithOverviewMode = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+            userAgentString = "$userAgentString AndroidApp/<%= version.name %>"
+            cacheMode = WebSettings.LOAD_DEFAULT
+            mediaPlaybackRequiresUserGesture = false
+        }
+
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
+
+        webView.addJavascriptInterface(AndroidBridge(this, this), "Android")
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val url = request.url.toString()
+                val scheme = request.url.scheme ?: ""
+
+                return when {
+                    scheme == "tel" || scheme == "mailto" || scheme == "intent" -> {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, request.url)
+                            startActivity(intent)
+                        } catch (_: Exception) {}
+                        true
+                    }
+                    scheme == "http" || scheme == "https" -> {
+                        val host = request.url.host ?: ""
+                        val siteHost = Uri.parse(WEBSITE_URL).host ?: ""
+                        if (host == siteHost) {
+                            false // load in WebView
+                        } else {
+                            // External URL — open in browser
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, request.url)
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                startActivity(intent)
+                            } catch (_: Exception) {}
+                            true
+                        }
+                    }
+                    else -> false
+                }
+            }
+
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                binding.progressBar.visibility = View.GONE
+
+                // Inject bridge readiness event
+                view.evaluateJavascript(
+                    """
+                    (function() {
+                        window.AndroidBridgeReady = true;
+                        window.dispatchEvent(new CustomEvent('androidBridgeReady', {
+                            detail: { version: Android.getVersion() }
+                        }));
+                    })();
+                    """.trimIndent(),
+                    null
+                )
+
+                // Inject FCM token if available
+                val token = getSharedPreferences("fcm_prefs", MODE_PRIVATE)
+                    .getString("fcm_token", null)
+                if (!token.isNullOrEmpty()) {
+                    val escaped = token.replace("'", "\\'")
+                    view.evaluateJavascript(
+                        "if(window.Android){ window.AndroidFcmToken = '$escaped'; }",
+                        null
+                    )
+                }
+            }
+        }
+
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onProgressChanged(view: WebView, newProgress: Int) {
+                binding.progressBar.progress = newProgress
+                if (newProgress < 100) {
+                    binding.progressBar.visibility = View.VISIBLE
+                } else {
+                    binding.progressBar.visibility = View.GONE
+                }
+            }
+
+            override fun onShowFileChooser(
+                webView: WebView,
+                filePathCallback: ValueCallback<Array<Uri>>,
+                fileChooserParams: FileChooserParams
+            ): Boolean {
+                fileChooserCallback?.onReceiveValue(null)
+                fileChooserCallback = filePathCallback
+
+                val intent = fileChooserParams.createIntent()
+                return try {
+                    startActivityForResult(intent, FILE_CHOOSER_REQUEST)
+                    true
+                } catch (_: Exception) {
+                    fileChooserCallback = null
+                    false
+                }
+            }
+
+            override fun onPermissionRequest(request: PermissionRequest) {
+                permissionRequest = request
+                val resources = request.resources
+
+                val androidPerms = mutableListOf<String>()
+                if (PermissionRequest.RESOURCE_VIDEO_CAPTURE in resources) {
+                    androidPerms.add(Manifest.permission.CAMERA)
+                }
+                if (PermissionRequest.RESOURCE_AUDIO_CAPTURE in resources) {
+                    androidPerms.add(Manifest.permission.RECORD_AUDIO)
+                }
+
+                if (androidPerms.isEmpty()) {
+                    request.grant(request.resources)
+                    return
+                }
+
+                val notGranted = androidPerms.filter {
+                    ContextCompat.checkSelfPermission(this@WebViewActivity, it) != PackageManager.PERMISSION_GRANTED
+                }
+
+                if (notGranted.isEmpty()) {
+                    request.grant(request.resources)
+                } else {
+                    ActivityCompat.requestPermissions(
+                        this@WebViewActivity,
+                        notGranted.toTypedArray(),
+                        CAMERA_PERMISSION_REQUEST
+                    )
+                }
+            }
+
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String,
+                callback: GeolocationPermissions.Callback
+            ) {
+                geolocationCallback = callback
+                geolocationOrigin = origin
+
+                if (ContextCompat.checkSelfPermission(
+                        this@WebViewActivity,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    callback.invoke(origin, true, false)
+                } else {
+                    ActivityCompat.requestPermissions(
+                        this@WebViewActivity,
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                        LOCATION_PERMISSION_REQUEST
+                    )
+                }
+            }
+        }
+    }
+
+    private fun setupBackNavigation() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (binding.webView.canGoBack()) {
+                    binding.webView.goBack()
+                } else {
+                    showExitDialog()
+                }
+            }
+        })
+    }
+
+    private fun showExitDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Exit")
+            .setMessage("Are you sure you want to exit?")
+            .setPositiveButton("Exit") { _, _ -> finish() }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == FILE_CHOOSER_REQUEST) {
+            val results = if (resultCode == Activity.RESULT_OK) {
+                WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+            } else {
+                null
+            }
+            fileChooserCallback?.onReceiveValue(results)
+            fileChooserCallback = null
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            CAMERA_PERMISSION_REQUEST -> {
+                val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+                if (allGranted) {
+                    permissionRequest?.grant(permissionRequest?.resources)
+                } else {
+                    permissionRequest?.deny()
+                }
+                permissionRequest = null
+            }
+            LOCATION_PERMISSION_REQUEST -> {
+                val granted = grantResults.isNotEmpty() &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED
+                geolocationCallback?.invoke(geolocationOrigin, granted, false)
+                geolocationCallback = null
+                geolocationOrigin = null
+            }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        binding.webView.saveState(outState)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binding.webView.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        binding.webView.onPause()
+    }
+
+    override fun onDestroy() {
+        binding.webView.destroy()
+        super.onDestroy()
+    }
+}

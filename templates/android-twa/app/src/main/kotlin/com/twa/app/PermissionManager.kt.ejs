@@ -1,0 +1,81 @@
+package <%= packageName %>
+
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+
+/**
+ * PermissionManager — handles Android runtime permission requests.
+ *
+ * Use in an Activity and forward [onRequestPermissionsResult] results to
+ * [handlePermissionResult] so callbacks are invoked correctly.
+ */
+class PermissionManager(private val activity: Activity) {
+
+    private val callbacks = mutableMapOf<Int, (Boolean) -> Unit>()
+
+    companion object {
+        private const val REQUEST_CAMERA = 2001
+        private const val REQUEST_LOCATION = 2002
+        private const val REQUEST_NOTIFICATION = 2003
+    }
+
+    fun requestCameraPermission(callback: (Boolean) -> Unit) {
+        if (hasPermission(Manifest.permission.CAMERA)) {
+            callback(true)
+            return
+        }
+        callbacks[REQUEST_CAMERA] = callback
+        ActivityCompat.requestPermissions(
+            activity,
+            arrayOf(Manifest.permission.CAMERA),
+            REQUEST_CAMERA
+        )
+    }
+
+    fun requestLocationPermission(callback: (Boolean) -> Unit) {
+        if (hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            callback(true)
+            return
+        }
+        callbacks[REQUEST_LOCATION] = callback
+        ActivityCompat.requestPermissions(
+            activity,
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ),
+            REQUEST_LOCATION
+        )
+    }
+
+    fun requestNotificationPermission(callback: (Boolean) -> Unit) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            // Notifications don't need runtime permission below Android 13
+            callback(true)
+            return
+        }
+        if (hasPermission(Manifest.permission.POST_NOTIFICATIONS)) {
+            callback(true)
+            return
+        }
+        callbacks[REQUEST_NOTIFICATION] = callback
+        ActivityCompat.requestPermissions(
+            activity,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            REQUEST_NOTIFICATION
+        )
+    }
+
+    fun handlePermissionResult(requestCode: Int, grantResults: IntArray) {
+        val granted = grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        callbacks.remove(requestCode)?.invoke(granted)
+    }
+
+    fun hasPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED
+}

@@ -1,28 +1,40 @@
 package <%= packageName %>
 
+import android.content.Intent
 import android.os.Bundle
 import com.google.androidbrowserhelper.trusted.LauncherActivity
 
 /**
- * MainActivity — the TWA entry point.
+ * MainActivity — TWA entry point and native-bridge router.
  *
- * This class extends [LauncherActivity] from the android-browser-helper library.
- * LauncherActivity reads the default URL from:
- *   AndroidManifest.xml > meta-data > android.support.customtabs.trusted.DEFAULT_URL
+ * When [NATIVE_BRIDGE_ENABLED] is true (i.e. one or more bridge features are
+ * requested in app.json), this activity immediately delegates to
+ * [WebViewActivity] which hosts a full WebView with the Android bridge.
  *
- * To customise TWA behavior, override the relevant methods here.
+ * When bridge features are disabled the standard TWA LauncherActivity flow is
+ * used, which opens the URL inside Chrome / Custom Tabs.
  */
 class MainActivity : LauncherActivity() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    companion object {
+        const val WEBSITE_URL = "<%= websiteUrl %>"
+        const val NATIVE_BRIDGE_ENABLED = <%= (features.camera || features.qrScanner || features.biometric || features.fileUpload || features.location || features.notifications) ? 'true' : 'false' %>
     }
 
-    /**
-     * Override to customise the URL opened in the TWA.
-     * By default, reads from AndroidManifest meta-data.
-     */
-    // override fun getLaunchingUrl(): Uri {
-    //     return Uri.parse("<%= websiteUrl %>")
-    // }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        if (NATIVE_BRIDGE_ENABLED) {
+            // Route to WebViewActivity for native bridge support
+            val url = intent.getStringExtra("url") ?: WEBSITE_URL
+            val webViewIntent = Intent(this, WebViewActivity::class.java).apply {
+                putExtra(WebViewActivity.EXTRA_URL, url)
+            }
+            startActivity(webViewIntent)
+            finish()
+            return
+        }
+
+        // Otherwise LauncherActivity handles the TWA lifecycle
+    }
 }

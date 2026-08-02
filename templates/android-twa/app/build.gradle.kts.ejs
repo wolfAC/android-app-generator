@@ -30,6 +30,11 @@ android {
                 "site": "<%= websiteUrl %>"
             }
         }]"""
+
+        // Build config fields
+        buildConfigField("String", "WEBSITE_URL", "\"<%= websiteUrl %>\"")
+        buildConfigField("String", "APP_NAME", "\"<%= appName %>\"")
+        buildConfigField("int", "VERSION_CODE_VALUE", "<%= version.code %>")
     }
 
     buildTypes {
@@ -97,6 +102,13 @@ dependencies {
 
     // Splash Screen API (Android 12+)
     implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // Kotlin Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+
+    // Lifecycle (coroutine scope support)
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
 
 <%  if (firebase.enabled) { %>
     // Firebase
